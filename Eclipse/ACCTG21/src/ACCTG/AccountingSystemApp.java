@@ -12,45 +12,87 @@ public class AccountingSystemApp extends JFrame {
     private JLabel statusLabel; 
     private JButton[] navButtons;
 
-    // Store all transactions
+    // ✅ Shared transactions list
     private ArrayList<Transaction> transactions = new ArrayList<>();
+
+    // Keep a reference to the transaction table model
     private DefaultTableModel transactionTableModel;
 
     public AccountingSystemApp() {
         setTitle("Accounting System");
-        setSize(900, 600);
+        setSize(1300, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
         // ===== NAVIGATION BAR =====
-        JPanel navBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+     // ===== NAVIGATION BAR =====
+        JPanel navBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         navBar.setBackground(new Color(0, 150, 150));
 
         String[] sections = {"New Transaction", "Transactions", "Accounts", "Balance Sheet", "General Journal", "General Ledger"};
         navButtons = new JButton[sections.length];
 
+        // Define colors
+        Color baseColor = new Color(0, 180, 180);
+        Color hoverColor = new Color(0, 170, 170);
+        Color activeColor = new Color(0, 160, 160);
+
         for (int i = 0; i < sections.length; i++) {
-            navButtons[i] = new JButton(sections[i]);
-            navButtons[i].setFocusPainted(false);
-            navButtons[i].setBackground(new Color(0, 150, 150));
-            navButtons[i].setForeground(Color.WHITE);
-            navButtons[i].setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+            JButton btn = new JButton(sections[i]);
+            btn.setFocusPainted(false);
+            btn.setBackground(baseColor);
+            btn.setForeground(Color.WHITE);
+            btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 180, 180), 2),
+                BorderFactory.createEmptyBorder(5, 20, 5, 20)
+            ));
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
             int index = i;
-            navButtons[i].addActionListener(e -> switchPanel(sections[index]));
-            navBar.add(navButtons[i]);
+            btn.addActionListener(e -> {
+                // Switch panel when clicked
+                switchPanel(sections[index]);
+                highlightActiveButton(index);
+            });
+
+            // 🔹 Hover effect
+            btn.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    if (btn.getBackground() != activeColor)
+                        btn.setBackground(hoverColor);
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    if (btn.getBackground() != activeColor)
+                        btn.setBackground(baseColor);
+                    btn.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(0, 180, 180), 2),
+                            BorderFactory.createEmptyBorder(5, 20, 5, 20)
+                        ));
+                }
+            });
+
+            navButtons[i] = btn;
+            navBar.add(btn);
         }
+
         add(navBar, BorderLayout.NORTH);
+
+        // Highlight first section by default
+//        highlightActiveButton(0);
+
 
         // ===== MAIN CONTENT (Card Layout) =====
         mainPanel = new JPanel(new CardLayout());
-        mainPanel.add(createNewTransactionPanel(), "New Transaction");
-        mainPanel.add(createTransactionsPanel(), "Transactions");
-        mainPanel.add(new Accounts(), "Accounts");
-//        mainPanel.add(new BalanceSheetPanel(), "Balance Sheet");
-//        mainPanel.add(new GeneralJournalPanel(), "General Journal");
-//        mainPanel.add(new GeneralLedgerPanel(), "General Ledger");
 
+        JPanel newTransactionPanel = createNewTransactionPanel();
+        JPanel transactionsPanel = createTransactionPanel();
+
+        mainPanel.add(newTransactionPanel, "New Transaction");
+        mainPanel.add(transactionsPanel, "Transactions");
 
         add(mainPanel, BorderLayout.CENTER);
 
@@ -58,71 +100,135 @@ public class AccountingSystemApp extends JFrame {
         setVisible(true);
     }
 
+    // 🔄 Switch between panels
+    private void switchPanel(String name) {
+        CardLayout cl = (CardLayout) (mainPanel.getLayout());
+        cl.show(mainPanel, name);
+    }
+    
+ // 🔘 Highlight which section is active
+    private void highlightActiveButton(int activeIndex) {
+        Color baseColor = new Color(0, 150, 150);
+        Color activeColor = new Color(0, 140, 140);
+
+        for (int i = 0; i < navButtons.length; i++) {
+            if (i == activeIndex) {
+                navButtons[i].setBackground(activeColor);
+                navButtons[i].setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 180, 180), 3),
+                    BorderFactory.createEmptyBorder(5, 20, 5, 20)
+                ));
+            } else {
+                navButtons[i].setBackground(baseColor);
+                navButtons[i].setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 130, 130), 2),
+                    BorderFactory.createEmptyBorder(5, 20, 5, 20)
+                ));
+            }
+        }
+    }
+
+
     // 🧾 NEW TRANSACTION PANEL
     private JPanel createNewTransactionPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBackground(Color.DARK_GRAY);
+//    	private JPanel createNewTransactionPanel() {
+    	    JPanel panel = new JPanel(new BorderLayout());
+    	    panel.setBackground(new Color(255, 255, 255));
 
-        JLabel dateLabel = new JLabel("Date (YYYY-MM-DD):");
-        dateLabel.setForeground(Color.WHITE);
-        dateLabel.setBounds(100, 50, 150, 25);
-        panel.add(dateLabel);
+    	    // Inner panel to hold form fields at upper center
+    	    JPanel formPanel = new JPanel(null);
+    	    formPanel.setPreferredSize(new Dimension(600, 350));
+    	    formPanel.setBackground(Color.WHITE);
 
-        JTextField dateField = new JTextField(LocalDate.now().toString());
-        dateField.setBounds(260, 50, 200, 25);
-        panel.add(dateField);
+    	    // CENTER CONTAINER to keep it top-center
+    	    JPanel topCenterWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 40));
+    	    topCenterWrapper.setBackground(Color.WHITE);
+    	    topCenterWrapper.add(formPanel);
+    	    panel.add(topCenterWrapper, BorderLayout.NORTH);
 
-        JLabel descLabel = new JLabel("Description:");
-        descLabel.setForeground(Color.WHITE);
-        descLabel.setBounds(100, 90, 150, 25);
-        panel.add(descLabel);
+    	    JLabel dateLabel = new JLabel("Date (YYYY-MM-DD):");
+    	    dateLabel.setForeground(Color.BLACK);
+    	    dateLabel.setBounds(130, 20, 150, 25);
+    	    formPanel.add(dateLabel);
 
-        JTextField descField = new JTextField();
-        descField.setBounds(260, 90, 200, 25);
-        panel.add(descField);
+    	    JTextField dateField = new JTextField(LocalDate.now().toString());
+    	    dateField.setBounds(260, 20, 200, 25);
+    	    formPanel.add(dateField);
 
-        JLabel debitLabel = new JLabel("Debit Account:");
-        debitLabel.setForeground(Color.WHITE);
-        debitLabel.setBounds(100, 130, 150, 25);
-        panel.add(debitLabel);
+    	    JLabel descLabel = new JLabel("Description:");
+    	    descLabel.setForeground(Color.BLACK);
+    	    descLabel.setBounds(130, 60, 150, 25);
+    	    formPanel.add(descLabel);
 
-        JComboBox<String> debitAccount = new JComboBox<>(new String[]{"Cash [ASSET]", "Accounts Receivable [ASSET]", "Supplies [ASSET]"});
-        debitAccount.setBounds(260, 130, 200, 25);
-        panel.add(debitAccount);
+    	    JTextField descField = new JTextField();
+    	    descField.setBounds(260, 60, 200, 25);
+    	    formPanel.add(descField);
 
-        JLabel creditLabel = new JLabel("Credit Account:");
-        creditLabel.setForeground(Color.WHITE);
-        creditLabel.setBounds(100, 170, 150, 25);
-        panel.add(creditLabel);
+    	    JLabel debitLabel = new JLabel("Debit Account:");
+    	    debitLabel.setForeground(Color.BLACK);
+    	    debitLabel.setBounds(130, 100, 150, 25);
+    	    formPanel.add(debitLabel);
 
-        JComboBox<String> creditAccount = new JComboBox<>(new String[]{"Cash [ASSET]", "Revenue [INCOME]", "Accounts Payable [LIABILITY]"});
-        creditAccount.setBounds(260, 170, 200, 25);
-        panel.add(creditAccount);
+    	    JComboBox<String> debitAccount = new JComboBox<>(new String[]{
+    	        "Cash [ASSET]", "Petty Cash [ASSET]", "Accounts Receivable [ASSET]",
+    	        "Supplies [ASSET]", "Prepaid Rent [ASSET]", "Equipment [ASSET]",
+    	        "Furniture [ASSET]", "Accumulated Depreciation [ASSET]",
+    	        "Accounts Payable [LIABILITY]", "Salaries Payable [LIABILITY]",
+    	        "Unearned Revenue [LIABILITY]", "Notes Payable [LIABILITY]",
+    	        "Owner's Capital [EQUITY]", "Owner's Withdrawals [EQUITY]",
+    	        "Service Revenue [INCOME]", "Interest Income [INCOME]",
+    	        "Sales Revenue [INCOME]", "Rent Expense [EXPENSE]",
+    	        "Salaries Expense [EXPENSE]", "Supplies Expense [EXPENSE]",
+    	        "Utilities Expense [EXPENSE]", "Depreciation Expense [EXPENSE]",
+    	        "Miscellaneous Expense [EXPENSE]"
+    	    });
+    	    debitAccount.setBounds(260, 100, 250, 25);
+    	    formPanel.add(debitAccount);
 
-        JLabel amountLabel = new JLabel("Amount:");
-        amountLabel.setForeground(Color.WHITE);
-        amountLabel.setBounds(100, 210, 150, 25);
-        panel.add(amountLabel);
+    	    JLabel creditLabel = new JLabel("Credit Account:");
+    	    creditLabel.setForeground(Color.BLACK);
+    	    creditLabel.setBounds(130, 140, 150, 25);
+    	    formPanel.add(creditLabel);
 
-        JTextField amountField = new JTextField();
-        amountField.setBounds(260, 210, 200, 25);
-        panel.add(amountField);
+    	    JComboBox<String> creditAccount = new JComboBox<>(new String[]{
+    	        "Cash [ASSET]", "Petty Cash [ASSET]", "Accounts Receivable [ASSET]",
+    	        "Supplies [ASSET]", "Prepaid Rent [ASSET]", "Equipment [ASSET]",
+    	        "Furniture [ASSET]", "Accumulated Depreciation [ASSET]",
+    	        "Accounts Payable [LIABILITY]", "Salaries Payable [LIABILITY]",
+    	        "Unearned Revenue [LIABILITY]", "Notes Payable [LIABILITY]",
+    	        "Owner's Capital [EQUITY]", "Owner's Withdrawals [EQUITY]",
+    	        "Service Revenue [INCOME]", "Interest Income [INCOME]",
+    	        "Sales Revenue [INCOME]", "Rent Expense [EXPENSE]",
+    	        "Salaries Expense [EXPENSE]", "Supplies Expense [EXPENSE]",
+    	        "Utilities Expense [EXPENSE]", "Depreciation Expense [EXPENSE]",
+    	        "Miscellaneous Expense [EXPENSE]"
+    	    });
+    	    creditAccount.setBounds(260, 140, 250, 25);
+    	    formPanel.add(creditAccount);
 
-        JButton addBtn = new JButton("Add Transaction");
-        addBtn.setBounds(260, 260, 150, 30);
-        panel.add(addBtn);
+    	    JLabel amountLabel = new JLabel("Amount:");
+    	    amountLabel.setForeground(Color.BLACK);
+    	    amountLabel.setBounds(130, 180, 150, 25);
+    	    formPanel.add(amountLabel);
 
-        JButton clearBtn = new JButton("Clear");
-        clearBtn.setBounds(420, 260, 100, 30);
-        panel.add(clearBtn);
+    	    JTextField amountField = new JTextField();
+    	    amountField.setBounds(260, 180, 200, 25);
+    	    formPanel.add(amountField);
 
-        statusLabel = new JLabel("");
-        statusLabel.setForeground(new Color(0, 255, 0));
-        statusLabel.setBounds(260, 300, 300, 25);
-        panel.add(statusLabel);
+    	    RoundedButton addBtn = new RoundedButton("Add Transaction");
+    	    addBtn.setBounds(260, 230, 120, 24);
+    	    formPanel.add(addBtn);
 
-        // 🟢 ADD BUTTON FUNCTIONALITY
+    	    RoundedButton clearBtn = new RoundedButton("Clear");
+    	    clearBtn.setBounds(390, 230, 100, 24);
+    	    formPanel.add(clearBtn);
+
+    	    statusLabel = new JLabel("");
+    	    statusLabel.setForeground(new Color(0, 255, 0));
+    	    statusLabel.setBounds(260, 270, 300, 25);
+    	    formPanel.add(statusLabel);
+
+        // Keep all your existing button logic unchanged 👇
         addBtn.addActionListener(e -> {
             try {
                 String date = dateField.getText().trim();
@@ -131,28 +237,31 @@ public class AccountingSystemApp extends JFrame {
                 String credit = creditAccount.getSelectedItem().toString();
                 double amount = Double.parseDouble(amountField.getText().trim());
 
-                // Create Transaction and add to list
                 Transaction t = new Transaction(date, desc, debit, credit, amount);
                 transactions.add(t);
 
-                // Add to table
-                transactionTableModel.addRow(new Object[]{t.getDate(), t.getDescription(), t.getDebitAccount(), t.getCreditAccount(), t.getAmount()});
-
+                if (transactionTableModel != null) {
+                    transactionTableModel.addRow(new Object[]{
+                        t.getDate(), t.getDescription(), t.getDebitAccount(), t.getCreditAccount(), t.getAmount()
+                    });
+                }
+                statusLabel.setForeground( new Color (0, 170, 170));
                 statusLabel.setText("✅ Transaction Saved Successfully");
                 Timer timer = new Timer(3000, ev -> statusLabel.setText(""));
                 timer.setRepeats(false);
                 timer.start();
 
-                // Clear fields
                 descField.setText("");
                 amountField.setText("");
             } catch (Exception ex) {
                 statusLabel.setForeground(Color.RED);
                 statusLabel.setText("❌ Invalid input. Please check all fields.");
+                Timer timer = new Timer(3000, ev -> statusLabel.setText(""));
+                timer.setRepeats(false);
+                timer.start();
             }
         });
 
-        // 🧹 CLEAR BUTTON FUNCTIONALITY
         clearBtn.addActionListener(e -> {
             dateField.setText(LocalDate.now().toString());
             descField.setText("");
@@ -162,39 +271,75 @@ public class AccountingSystemApp extends JFrame {
             statusLabel.setText("");
         });
 
+        // ⬇ Add formPanel centered in the parent panel
+//        panel.add(formPanel);
         return panel;
     }
 
-    // 📋 TRANSACTIONS PANEL (Table)
-    private JPanel createTransactionsPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    // 📋 TRANSACTIONS PANEL
+    private JPanel createTransactionPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(Color.WHITE);
 
-        JLabel header = new JLabel("Transactions");
-        header.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(header, BorderLayout.NORTH);
+        // 🔍 Search bar section
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JLabel searchLabel = new JLabel("Search:");
+        JTextField searchField = new JTextField(20);
+        JButton clearButton = new JButton("Clear");
+        searchPanel.add(searchLabel);
+        searchPanel.add(searchField);
+        searchPanel.add(clearButton);
+        panel.add(searchPanel, BorderLayout.NORTH);
 
-        transactionTableModel = new DefaultTableModel(new Object[]{"Date", "Description", "Debit Account", "Credit Account", "Amount"}, 0);
+        // 🧾 Table setup
+        String[] columnNames = {"Date", "Description", "Debit Account", "Credit Account", "Amount"};
+        transactionTableModel = new DefaultTableModel(columnNames, 0);
         JTable table = new JTable(transactionTableModel);
-        table.setFillsViewportHeight(true);
+        JScrollPane scrollPane = new JScrollPane(table);
+        panel.add(scrollPane, BorderLayout.CENTER);
 
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        // 🔍 Search logic
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                String search = searchField.getText().toLowerCase();
+                transactionTableModel.setRowCount(0);
+                for (Transaction t : transactions) {
+                    if (t.getDescription().toLowerCase().contains(search) ||
+                        t.getDebitAccount().toLowerCase().contains(search) ||
+                        t.getCreditAccount().toLowerCase().contains(search)) {
+                        transactionTableModel.addRow(new Object[]{
+                            t.getDate(),
+                            t.getDescription(),
+                            t.getDebitAccount(),
+                            t.getCreditAccount(),
+                            t.getAmount()
+                        });
+                    }
+                }
+            }
+        });
+
+        // 🧹 Clear search
+        clearButton.addActionListener(e -> {
+            searchField.setText("");
+            refreshTransactionTable();
+        });
+
         return panel;
     }
 
-    // 🔁 SWITCH PANELS
-    private void switchPanel(String name) {
-        CardLayout cl = (CardLayout) (mainPanel.getLayout());
-        cl.show(mainPanel, name);
-
-        // Highlight active nav button
-        for (JButton btn : navButtons) {
-            if (btn.getText().equals(name)) {
-                btn.setBackground(new Color(0, 200, 200));
-            } else {
-                btn.setBackground(new Color(0, 150, 150));
-            }
+    // 🔁 Helper to refresh the table
+    private void refreshTransactionTable() {
+        transactionTableModel.setRowCount(0);
+        for (Transaction t : transactions) {
+            transactionTableModel.addRow(new Object[]{
+                t.getDate(),
+                t.getDescription(),
+                t.getDebitAccount(),
+                t.getCreditAccount(),
+                t.getAmount()
+            });
         }
     }
 
@@ -202,3 +347,4 @@ public class AccountingSystemApp extends JFrame {
         SwingUtilities.invokeLater(AccountingSystemApp::new);
     }
 }
+
